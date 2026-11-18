@@ -1,18 +1,12 @@
-// server/db.js
-// In-memory "mock database" built as a singleton.
-// A singleton means only ONE instance of this database ever exists.
-// Every file that does require("./db") gets that same instance,
-// so all parts of the app share the same data.
+// db.js
+// This is my mock database. It uses the Singleton pattern.
+// Singleton means only ONE copy of the database is ever created,
+// and every file that uses it shares that same copy.
 
-class FoodDatabase {
+class Database {
   constructor() {
-    // If an instance was already created, return it instead of making a new one.
-    if (FoodDatabase.instance) {
-      return FoodDatabase.instance;
-    }
-
-    // The data lives in memory only. It is lost when the server stops.
-    // Five food items, each with an id, a name and a price.
+    // The data is stored in an array (it is lost when the server stops).
+    // 5 foods, each with an id, a name and a price.
     this.foods = [
       { id: 1, name: "Apple", price: 1.25 },
       { id: 2, name: "Bread", price: 3.49 },
@@ -20,19 +14,24 @@ class FoodDatabase {
       { id: 4, name: "Eggs", price: 4.25 },
       { id: 5, name: "Milk", price: 4.99 },
     ];
-
-    // Remember this instance so the next call to "new FoodDatabase()" reuses it.
-    FoodDatabase.instance = this;
   }
 
-  // getAll() returns every food item in the database.
-  // It returns a copy of the array so outside code cannot change the original data.
+  // getAll() returns every food in the database
   getAll() {
-    return [...this.foods];
+    return this.foods;
   }
 }
 
-// Create the single instance and export it.
-// Other files import this ready-made object (they never call "new" themselves).
-const instance = new FoodDatabase();
-module.exports = instance;
+// This variable holds the one and only database.
+let instance = null;
+
+// getInstance() makes the database the first time it is called.
+// After that, it gives back the same one every time.
+function getInstance() {
+  if (instance === null) {
+    instance = new Database();
+  }
+  return instance;
+}
+
+module.exports = { getInstance };

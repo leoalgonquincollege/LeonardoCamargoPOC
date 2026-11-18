@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
   <title>Foods - Student POC</title>
-  <!-- Minimal styling: just enough to make the table readable -->
+  <!-- Simple styling so the table is easy to read -->
   <style>
     body { font-family: Arial, sans-serif; margin: 2rem; }
-    table { border-collapse: collapse; min-width: 300px; }
+    table { border-collapse: collapse; }
     th, td { border: 1px solid #999; padding: 6px 12px; text-align: left; }
     th { background: #eee; }
     .disclaimer { margin-top: 2rem; font-size: 0.85rem; color: #555; }
-    .error { color: #b00020; }
   </style>
 </head>
 <body>
   <h1>Food Items</h1>
 
-  <p id="status">Loading...</p>
-
-  <table id="foods-table" hidden>
+  <table>
     <thead>
-      <tr><th>ID</th><th>Name</th><th>Price</th></tr>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Price</th>
+      </tr>
     </thead>
-    <!-- The rows are added here by JavaScript below -->
+    <!-- JavaScript adds the rows here -->
     <tbody id="foods-body"></tbody>
   </table>
 
@@ -33,47 +33,38 @@
   </p>
 
   <script>
-    // Ask the backend for all foods, then build the table rows (DOM update).
-    async function loadFoods() {
-      const status = document.getElementById("status");
-      const table = document.getElementById("foods-table");
-      const body = document.getElementById("foods-body");
+    // Ask the server for the foods
+    fetch("/foods")
+      .then(function (response) {
+        // turn the response into a JavaScript array
+        return response.json();
+      })
+      .then(function (foods) {
+        const tbody = document.getElementById("foods-body");
 
-      try {
-        // fetch() calls the GET /foods route on our Express server
-        const response = await fetch("/foods");
-
-        // If the server did not answer with 200, treat it as an error
-        if (!response.ok) {
-          throw new Error("Server returned status " + response.status);
-        }
-
-        // Convert the JSON response into a JavaScript array
-        const foods = await response.json();
-
-        // Clear any old rows, then add one table row per food item
-        body.innerHTML = "";
-        foods.forEach((food) => {
+        // make one table row for each food
+        for (let i = 0; i < foods.length; i++) {
           const row = document.createElement("tr");
-          row.innerHTML =
-            "<td>" + food.id + "</td>" +
-            "<td>" + food.name + "</td>" +
-            "<td>$" + food.price.toFixed(2) + "</td>";
-          body.appendChild(row);
-        });
 
-        // Show the table and hide the loading message
-        table.hidden = false;
-        status.textContent = "";
-      } catch (err) {
-        // Show a readable error message on the page
-        status.textContent = "Could not load foods: " + err.message;
-        status.className = "error";
-      }
-    }
+          const idCell = document.createElement("td");
+          idCell.textContent = foods[i].id;
 
-    // Run when the page loads
-    loadFoods();
+          const nameCell = document.createElement("td");
+          nameCell.textContent = foods[i].name;
+
+          const priceCell = document.createElement("td");
+          priceCell.textContent = "$" + foods[i].price.toFixed(2);
+
+          // put the cells in the row, then the row in the table
+          row.appendChild(idCell);
+          row.appendChild(nameCell);
+          row.appendChild(priceCell);
+          tbody.appendChild(row);
+        }
+      })
+      .catch(function (error) {
+        console.log("Could not load foods: " + error);
+      });
   </script>
 </body>
 </html>

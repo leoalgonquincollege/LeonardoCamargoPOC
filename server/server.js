@@ -1,61 +1,52 @@
-// server/server.js
-// Express backend for the Full Stack Proof-of-Concept.
-// It serves the frontend from /public and exposes one API route: GET /foods.
+// server.js
+// Express backend for my full stack proof-of-concept.
+// It has one API route: GET /foods
 
 const express = require("express");
 const path = require("path");
-const db = require("./db"); // the singleton mock database
+const db = require("./db");
 
 const app = express();
 
-// JSON middleware: lets Express read and parse JSON request bodies.
-// (This POC only has a GET route, but the middleware is part of the setup.)
+// get the single database instance
+const database = db.getInstance();
+
+// JSON middleware so Express can read JSON data
 app.use(express.json());
 
-// Simple request logger so we can see what the server is doing in the terminal.
-// This helps with debugging: every request prints its method and URL.
-app.use((req, res, next) => {
-  console.log(`[request] ${req.method} ${req.url}`);
-  next(); // pass control to the next middleware or route
+// Log every request in the terminal
+app.use(function (req, res, next) {
+  console.log(req.method + " " + req.url);
+  next();
 });
 
-// Serve the frontend files (public/index.html) as static files.
+// Serve the frontend files from the public folder
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-// GET /foods
-// Returns all food items from the singleton database as JSON.
-// Status codes:
-//   200 OK                    - the foods were returned
-//   500 Internal Server Error - something unexpected went wrong
-app.get("/foods", (req, res) => {
-  try {
-    const foods = db.getAll();
-    console.log(`[GET /foods] returning ${foods.length} items`);
-    res.status(200).json(foods);
-  } catch (err) {
-    console.error("[GET /foods] error:", err.message);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+// GET /foods - send back all the foods as JSON
+// Status 200 means OK
+app.get("/foods", function (req, res) {
+  const foods = database.getAll();
+  console.log("Sending " + foods.length + " foods");
+  res.status(200).json(foods);
 });
 
-// 404 handling.
-// This runs only if no earlier route or static file matched the request.
-app.use((req, res) => {
-  console.log(`[404] ${req.method} ${req.url} not found`);
+// 404 handling - this runs when no route above matched
+// Status 404 means Not Found
+app.use(function (req, res) {
+  console.log("404 - not found: " + req.url);
   res.status(404).json({ error: "Not Found" });
 });
 
-// Dynamic port: use the port given by the hosting platform (process.env.PORT)
-// or fall back to 3000 when running locally.
+// Dynamic port: use the hosting port if there is one, otherwise 3000
 const PORT = process.env.PORT || 3000;
 
-// Only start listening when this file is run directly (npm start).
-// When the test file imports this app, it does NOT open a real port.
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// Don't start the server during tests (Jest sets NODE_ENV to "test")
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, function () {
+    console.log("Server running on port " + PORT);
   });
 }
 
-// Export the app so supertest can test it.
+// Export the app so the tests can use it
 module.exports = app;
